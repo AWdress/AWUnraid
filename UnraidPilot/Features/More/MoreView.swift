@@ -8,6 +8,7 @@ struct MoreView: View {
     var body: some View {
         List {
             Section("管理") {
+                NavigationLink { FileManagerRootView() } label: { Label("文件管理", systemImage: "folder.fill") }
                 NavigationLink { VirtualMachinesView() } label: { Label("虚拟机", systemImage: "desktopcomputer") }
                 NavigationLink { NotificationsView() } label: { Label("通知", systemImage: "bell.fill") }
                 NavigationLink { SystemLogsView() } label: { Label("系统日志", systemImage: "doc.text.fill") }

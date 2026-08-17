@@ -13,6 +13,8 @@ final class AppSession: ObservableObject {
     private let configurationKey = "aw-unraid.server-configuration"
     private var configuration: ServerConfiguration?
 
+    var serverHost: String { configuration?.baseURL.host ?? "" }
+
     init() {
         guard let data = UserDefaults.standard.data(forKey: configurationKey),
               let configuration = try? JSONDecoder().decode(ServerConfiguration.self, from: data),
