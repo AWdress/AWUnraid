@@ -1,0 +1,34 @@
+name: UnraidPilot
+options:
+  bundleIdPrefix: com.local
+  deploymentTarget:
+    iOS: "16.0"
+settings:
+  base:
+    SWIFT_VERSION: 5.9
+    CODE_SIGN_STYLE: Automatic
+targets:
+  UnraidPilot:
+    type: application
+    platform: iOS
+    sources: [UnraidPilot]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.local.UnraidPilot
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        INFOPLIST_KEY_CFBundleDisplayName: AW Unraid
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: true
+        INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: true
+        INFOPLIST_KEY_UILaunchScreen_Generation: true
+        INFOPLIST_KEY_NSLocalNetworkUsageDescription: 用于发现并连接局域网中的 Unraid 服务器。
+        INFOPLIST_KEY_NSAppTransportSecurity_NSAllowsLocalNetworking: true
+        INFOPLIST_KEY_NSAppTransportSecurity_NSAllowsArbitraryLoads: true
+        TARGETED_DEVICE_FAMILY: "1,2"
+    scheme:
+      testTargets: [UnraidPilotTests]
+  UnraidPilotTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [UnraidPilotTests]
+    dependencies:
+      - target: UnraidPilot

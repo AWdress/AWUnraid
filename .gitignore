@@ -1,0 +1,12 @@
+.DS_Store
+.build/
+build/
+DerivedData/
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+*.ipa
+AW-Unraid-source.zip
+*.mobileprovision
+*.p12
+*.cer
+*.key
