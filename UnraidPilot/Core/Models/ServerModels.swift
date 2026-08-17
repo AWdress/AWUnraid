@@ -67,6 +67,38 @@ struct ContainerSnapshot: Identifiable, Equatable {
     let name: String
     let image: String
     var state: State
+    var status = ""
+    var iconURL: URL?
+    var webUIURL: URL?
+    var autoStart = false
+    var autoStartOrder: Int?
+    var autoStartWait: Int?
+    var updateAvailable = false
+    var isOrphaned = false
+    var networkMode = "—"
+    var command = ""
+    var created: Int = 0
+    var rootSize: Int64 = 0
+    var writableSize: Int64 = 0
+    var logSize: Int64 = 0
+    var ports: [ContainerPortSnapshot] = []
+    var mounts: [ContainerMountSnapshot] = []
+}
+
+struct ContainerPortSnapshot: Identifiable, Equatable {
+    var id: String { "\(ip ?? "*")-\(publicPort ?? 0)-\(privatePort ?? 0)-\(type)" }
+    let ip: String?
+    let privatePort: Int?
+    let publicPort: Int?
+    let type: String
+}
+
+struct ContainerMountSnapshot: Identifiable, Equatable {
+    var id: String { "\(source)-\(destination)" }
+    let source: String
+    let destination: String
+    let type: String
+    let readOnly: Bool
 }
 
 struct VirtualMachineSnapshot: Identifiable, Equatable {

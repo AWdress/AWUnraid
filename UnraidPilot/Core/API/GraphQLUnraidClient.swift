@@ -45,7 +45,16 @@ final class GraphQLUnraidClient: UnraidServing {
             parityCheckStatus { status errors running progress }
             disks { id name device size status temp fsSize fsUsed fsFree fsType numErrors }
           }
-          docker { containers { id names image state status autoStart iconUrl webUiUrl } }
+          docker {
+            containers {
+              id names image command created state status
+              autoStart autoStartOrder autoStartWait
+              iconUrl webUiUrl isOrphaned isUpdateAvailable
+              sizeRootFs sizeRw sizeLog mounts
+              hostConfig { networkMode }
+              ports { ip privatePort publicPort type }
+            }
+          }
         }
         """
         let root = try await execute(query: query)
@@ -110,7 +119,37 @@ final class GraphQLUnraidClient: UnraidServing {
                 id: raw.string("id") ?? UUID().uuidString,
                 name: raw.strings("names").first?.trimmingCharacters(in: CharacterSet(charactersIn: "/")) ?? "Container",
                 image: raw.string("image") ?? "",
-                state: state
+                state: state,
+                status: raw.string("status") ?? "",
+                iconURL: raw.url("iconUrl"),
+                webUIURL: raw.url("webUiUrl"),
+                autoStart: raw.bool("autoStart") ?? false,
+                autoStartOrder: raw.optionalInt("autoStartOrder"),
+                autoStartWait: raw.optionalInt("autoStartWait"),
+                updateAvailable: raw.bool("isUpdateAvailable") ?? false,
+                isOrphaned: raw.bool("isOrphaned") ?? false,
+                networkMode: raw.object("hostConfig")?.string("networkMode") ?? "—",
+                command: raw.string("command") ?? "",
+                created: Int(raw.double("created")),
+                rootSize: Int64(raw.double("sizeRootFs")),
+                writableSize: Int64(raw.double("sizeRw")),
+                logSize: Int64(raw.double("sizeLog")),
+                ports: raw.objects("ports").map {
+                    .init(
+                        ip: $0.string("ip"),
+                        privatePort: $0.optionalInt("privatePort"),
+                        publicPort: $0.optionalInt("publicPort"),
+                        type: $0.string("type") ?? "TCP"
+                    )
+                },
+                mounts: raw.objects("mounts").map {
+                    .init(
+                        source: $0.stringAnyCase("source") ?? "—",
+                        destination: $0.stringAnyCase("destination") ?? "—",
+                        type: $0.stringAnyCase("type") ?? "bind",
+                        readOnly: $0.boolAnyCase("readOnly") ?? !($0.boolAnyCase("rw", default: true) ?? true)
+                    )
+                }
             )
         }
 
@@ -159,6 +198,22 @@ final class GraphQLUnraidClient: UnraidServing {
         }
         let mutation = "mutation ContainerAction($id: PrefixedID!) { docker { \(field)(id: $id) { id state status } } }"
         _ = try await execute(query: mutation, variables: ["id": containerID])
+    }
+
+    func updateAllContainers() async throws {
+        _ = try await execute(query: "mutation { docker { updateAllContainers { id state status isUpdateAvailable } } }")
+    }
+
+    func setContainerAutoStart(id: String, enabled: Bool, wait: Int?) async throws {
+        var entry: [String: Any] = ["id": id, "autoStart": enabled]
+        if let wait { entry["wait"] = wait }
+        let mutation = "mutation AutoStart($entries: [DockerAutostartEntryInput!]!) { docker { updateAutostartConfiguration(entries: $entries, persistUserPreferences: true) } }"
+        _ = try await execute(query: mutation, variables: ["entries": [entry]])
+    }
+
+    func removeContainer(id: String, withImage: Bool) async throws {
+        let mutation = "mutation RemoveContainer($id: PrefixedID!, $withImage: Boolean) { docker { removeContainer(id: $id, withImage: $withImage) } }"
+        _ = try await execute(query: mutation, variables: ["id": id, "withImage": withImage])
     }
 
     func perform(_ action: VirtualMachineAction, vmID: String) async throws {
@@ -287,6 +342,27 @@ private extension Dictionary where Key == String, Value == Any {
         if let value = self[key] as? Bool { return value }
         if let value = self[key] as? NSNumber { return value.boolValue }
         return nil
+    }
+    func optionalInt(_ key: String) -> Int? {
+        if self[key] is NSNull || self[key] == nil { return nil }
+        if let value = self[key] as? NSNumber { return value.intValue }
+        if let value = self[key] as? String { return Int(value) }
+        return nil
+    }
+    func url(_ key: String) -> URL? {
+        guard let value = string(key), !value.isEmpty else { return nil }
+        return URL(string: value)
+    }
+    func stringAnyCase(_ key: String) -> String? {
+        let match = first { $0.key.caseInsensitiveCompare(key) == .orderedSame }
+        if let value = match?.value as? String { return value }
+        return nil
+    }
+    func boolAnyCase(_ key: String, default fallback: Bool? = nil) -> Bool? {
+        let match = first { $0.key.caseInsensitiveCompare(key) == .orderedSame }
+        if let value = match?.value as? Bool { return value }
+        if let value = match?.value as? NSNumber { return value.boolValue }
+        return fallback
     }
 }
 

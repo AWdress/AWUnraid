@@ -64,6 +64,18 @@ final class AppSession: ObservableObject {
         await runOperation { try await client.perform(action, containerID: containerID) }
     }
 
+    func updateAllContainers() async {
+        await runOperation { try await client.updateAllContainers() }
+    }
+
+    func setContainerAutoStart(id: String, enabled: Bool, wait: Int?) async {
+        await runOperation { try await client.setContainerAutoStart(id: id, enabled: enabled, wait: wait) }
+    }
+
+    func removeContainer(id: String, withImage: Bool) async {
+        await runOperation { try await client.removeContainer(id: id, withImage: withImage) }
+    }
+
     func perform(_ action: VirtualMachineAction, vmID: String) async {
         await runOperation { try await client.perform(action, vmID: vmID) }
     }
