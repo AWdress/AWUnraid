@@ -24,10 +24,12 @@ struct ContainerSettingsView: View {
                 }
             }
 
-            Section("运行配置") {
+            Section {
                 LabeledContent("镜像", value: container?.image ?? "—")
                 LabeledContent("网络模式", value: container?.networkMode ?? "—")
                 LabeledContent("启动顺序", value: container?.autoStartOrder.map(String.init) ?? "自动")
+            } header: {
+                Text("运行配置")
             } footer: {
                 Text("Unraid GraphQL 当前支持读取运行配置，但不提供修改端口、挂载和环境变量的接口。")
             }
