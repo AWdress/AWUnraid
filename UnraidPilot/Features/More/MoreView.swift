@@ -11,11 +11,6 @@ struct MoreView: View {
                 NavigationLink { VirtualMachinesView() } label: { Label("虚拟机", systemImage: "desktopcomputer") }
                 NavigationLink { NotificationsView() } label: { Label("通知", systemImage: "bell.fill") }
                 NavigationLink { SystemLogsView() } label: { Label("系统日志", systemImage: "doc.text.fill") }
-                if let url = session.webConsoleURL {
-                    NavigationLink { WebAdminView(url: url) } label: {
-                        Label("完整 Web 管理台", systemImage: "safari.fill")
-                    }
-                }
             }
             Section("服务器") {
                 NavigationLink { ServerSettingsView() } label: { Label("连接设置", systemImage: "gearshape.fill") }

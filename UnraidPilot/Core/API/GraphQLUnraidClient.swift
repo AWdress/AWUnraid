@@ -46,12 +46,33 @@ final class GraphQLUnraidClient: UnraidServing {
             disks { id name device size status temp fsSize fsUsed fsFree fsType numErrors }
           }
           docker { containers { id names image state status autoStart iconUrl webUiUrl } }
-          vms { domains { id name state } }
         }
         """
         let root = try await execute(query: query)
         guard let data = root.object("data") else { throw UnraidAPIError.unsupportedSchema }
-        return try decodeSnapshot(data)
+        var snapshot = try decodeSnapshot(data)
+        snapshot.virtualMachines = await fetchVirtualMachinesIfAvailable()
+        return snapshot
+    }
+
+    private func fetchVirtualMachinesIfAvailable() async -> [VirtualMachineSnapshot] {
+        let query = "query MobileVMs { vms { domains { id name state } } }"
+        guard let root = try? await execute(query: query) else { return [] }
+        return (root.object("data")?.object("vms")?.objects("domains") ?? []).map { raw in
+            let rawState = (raw.string("state") ?? "").uppercased()
+            let state: VirtualMachineSnapshot.State
+            switch rawState {
+            case "RUNNING", "IDLE": state = .running
+            case "PAUSED", "PMSUSPENDED": state = .paused
+            case "SHUTDOWN", "SHUTOFF": state = .stopped
+            default: state = .unknown
+            }
+            return .init(
+                id: raw.string("id") ?? UUID().uuidString,
+                name: raw.string("name") ?? "VM",
+                state: state
+            )
+        }
     }
 
     private func decodeSnapshot(_ data: [String: Any]) throws -> ServerSnapshot {
@@ -117,17 +138,7 @@ final class GraphQLUnraidClient: UnraidServing {
             parityProgress: min(max((parity?.double("progress") ?? 0) / 100, 0), 1),
             disks: disks,
             containers: containers,
-            virtualMachines: (data.object("vms")?.objects("domains") ?? []).map { raw in
-                let rawState = (raw.string("state") ?? "").uppercased()
-                let state: VirtualMachineSnapshot.State
-                switch rawState {
-                case "RUNNING", "IDLE": state = .running
-                case "PAUSED", "PMSUSPENDED": state = .paused
-                case "SHUTDOWN", "SHUTOFF": state = .stopped
-                default: state = .unknown
-                }
-                return .init(id: raw.string("id") ?? UUID().uuidString, name: raw.string("name") ?? "VM", state: state)
-            }
+            virtualMachines: []
         )
     }
 
