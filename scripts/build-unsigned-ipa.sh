@@ -29,11 +29,9 @@ xcodebuild \
   archive
 
 app_path="$archive_path/Products/Applications/UnraidPilot.app"
-package_frameworks="$derived_data_path/Build/Intermediates.noindex/ArchiveIntermediates/UnraidPilot/BuildProductsPath/Release-iphoneos/PackageFrameworks"
-if [[ -d "$package_frameworks" ]]; then
-  mkdir -p "$app_path/Frameworks"
-  find "$package_frameworks" -maxdepth 1 -type d -name '*.framework' -exec cp -R {} "$app_path/Frameworks/" \;
-fi
+build_products="$derived_data_path/Build/Intermediates.noindex/ArchiveIntermediates/UnraidPilot/BuildProductsPath/Release-iphoneos"
+mkdir -p "$app_path/Frameworks"
+find "$build_products" -maxdepth 2 -name '*.framework' -exec cp -RL {} "$app_path/Frameworks/" \;
 
 if [[ ! -d "$app_path/Frameworks/AMSMB2.framework" ]]; then
   echo "AMSMB2.framework was not embedded in the app bundle" >&2
