@@ -17,6 +17,9 @@ struct MoreView: View {
                 NavigationLink { ServerSettingsView() } label: { Label("连接设置", systemImage: "gearshape.fill") }
                 Button("断开并清除凭据", role: .destructive) { confirmsDisconnect = true }
             }
+            Section("关于") {
+                NavigationLink { OpenSourceLicensesView() } label: { Label("开源许可", systemImage: "doc.text.magnifyingglass") }
+            }
         }
         .scrollContentBackground(.hidden).background(AppTheme.background).navigationTitle("更多")
         .confirmationDialog("清除此设备上的连接信息和 API Key？", isPresented: $confirmsDisconnect, titleVisibility: .visible) {

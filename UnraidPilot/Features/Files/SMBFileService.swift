@@ -32,7 +32,12 @@ final class SMBFileService: @unchecked Sendable {
 
     func connect() async throws { try await manager.connectShare(name: share) }
 
+    private func ensureConnected() async throws {
+        try await manager.connectShare(name: share)
+    }
+
     func list(path: String) async throws -> [SMBFileItem] {
+        try await ensureConnected()
         let values = try await manager.contentsOfDirectory(atPath: path)
         return values.compactMap { attributes in
             guard let name = attributes[.nameKey] as? String, name != ".", name != ".." else { return nil }
@@ -52,16 +57,28 @@ final class SMBFileService: @unchecked Sendable {
         }
     }
 
-    func createDirectory(path: String) async throws { try await manager.createDirectory(atPath: path) }
-    func remove(path: String) async throws { try await manager.removeItem(atPath: path) }
-    func move(from: String, to: String) async throws { try await manager.moveItem(atPath: from, toPath: to) }
+    func createDirectory(path: String) async throws {
+        try await ensureConnected()
+        try await manager.createDirectory(atPath: path)
+    }
+    func remove(path: String) async throws {
+        try await ensureConnected()
+        try await manager.removeItem(atPath: path)
+    }
+    func move(from: String, to: String) async throws {
+        try await ensureConnected()
+        try await manager.moveItem(atPath: from, toPath: to)
+    }
     func copy(from: String, to: String, recursive: Bool) async throws {
+        try await ensureConnected()
         try await manager.copyItem(atPath: from, toPath: to, recursive: recursive, progress: { _, _ in true })
     }
     func upload(localURL: URL, to remotePath: String) async throws {
+        try await ensureConnected()
         try await manager.uploadItem(at: localURL, toPath: remotePath, progress: { _ in true })
     }
     func download(path: String, fileName: String) async throws -> URL {
+        try await ensureConnected()
         let directory = FileManager.default.temporaryDirectory.appending(path: "AW-Unraid-Downloads", directoryHint: .isDirectory)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let destination = directory.appending(path: fileName)
@@ -76,7 +93,7 @@ final class SMBFileService: @unchecked Sendable {
 
 @MainActor
 final class SMBFileStore: ObservableObject {
-    @Published var configuration = SMBConfiguration(host: "", share: "", username: "")
+    @Published var configuration = SMBConfiguration(host: "", share: "", username: "guest")
     @Published var password = ""
     @Published var isConfigured = false
     @Published var isBusy = false
@@ -117,7 +134,7 @@ final class SMBFileStore: ObservableObject {
     func disconnect() throws {
         try KeychainStore.delete(account: passwordAccount)
         UserDefaults.standard.removeObject(forKey: configurationKey)
-        configuration = .init(host: "", share: "", username: "")
+        configuration = .init(host: "", share: "", username: "guest")
         password = ""
         service = nil
         isConfigured = false
