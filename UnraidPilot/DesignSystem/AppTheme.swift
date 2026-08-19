@@ -15,12 +15,11 @@ struct SurfaceModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .background(AppTheme.surface)
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.06)))
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.white.opacity(0.06)))
     }
 }
 
 extension View {
     func appSurface() -> some View { modifier(SurfaceModifier()) }
 }
-

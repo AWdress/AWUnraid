@@ -86,7 +86,7 @@ struct ContainersView: View {
         let updates = session.server.containers.filter(\.updateAvailable).count
         let total = max(session.server.containers.count, 1)
 
-        return VStack(alignment: .leading, spacing: 14) {
+        return VStack(alignment: .leading, spacing: 10) {
             GeometryReader { proxy in
                 HStack(spacing: 3) {
                     Capsule().fill(AppTheme.healthy).frame(width: proxy.size.width * CGFloat(running) / CGFloat(total))
@@ -96,14 +96,14 @@ struct ContainersView: View {
             }
             .frame(height: 6)
 
-            HStack(spacing: 18) {
+            HStack(spacing: 14) {
                 StatusCount(color: AppTheme.healthy, text: "运行 \(running)")
                 StatusCount(color: .secondary, text: "已停止 \(stopped)")
                 if updates > 0 { StatusCount(color: AppTheme.warning, text: "可更新 \(updates)") }
             }
-            .font(.subheadline.weight(.medium))
+            .font(.caption.weight(.medium))
         }
-        .padding(.vertical, 14)
+        .padding(.vertical, 10)
     }
 
     @ViewBuilder

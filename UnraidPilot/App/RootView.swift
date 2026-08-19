@@ -16,6 +16,9 @@ struct RootView: View {
                     NavigationStack { ContainersView() }
                         .tabItem { Label("容器", systemImage: "shippingbox.fill") }
                         .tag(AppTab.containers)
+                    NavigationStack { FileManagerRootView() }
+                        .tabItem { Label("文件", systemImage: "folder.fill") }
+                        .tag(AppTab.files)
                     NavigationStack { MoreView() }
                         .tabItem { Label("更多", systemImage: "ellipsis") }
                         .tag(AppTab.more)

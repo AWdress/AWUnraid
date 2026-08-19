@@ -112,5 +112,5 @@ final class AppSession: ObservableObject {
 }
 
 enum AppTab: Hashable {
-    case overview, storage, containers, more
+    case overview, storage, containers, files, more
 }

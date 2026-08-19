@@ -29,11 +29,11 @@ struct SMBDirectoryView: View {
                 ProgressView("正在读取文件…")
             } else if items.isEmpty {
                 VStack(spacing: 14) {
-                    Image(systemName: "folder").font(.system(size: 42)).foregroundStyle(.secondary)
+                    Image(systemName: "folder").font(.largeTitle).foregroundStyle(.secondary)
                     Text("文件夹为空").font(.headline)
                     Text("可从右上角新建文件夹或上传文件。").font(.subheadline).foregroundStyle(.secondary)
                 }
-                .multilineTextAlignment(.center).padding(30)
+                .multilineTextAlignment(.center).padding(24)
             } else {
                 List(visibleItems) { item in
                     if item.isDirectory {
@@ -148,7 +148,7 @@ private struct FileRow: View {
     var body: some View {
         HStack(spacing: 13) {
             Image(systemName: item.isDirectory ? "folder.fill" : fileIcon(item.name))
-                .font(.title3).foregroundStyle(item.isDirectory ? AppTheme.accent : .secondary).frame(width: 30)
+                .font(.body).foregroundStyle(item.isDirectory ? AppTheme.accent : .secondary).frame(width: 26)
             VStack(alignment: .leading, spacing: 3) {
                 Text(item.name).foregroundStyle(.primary).lineLimit(1)
                 if !item.isDirectory {
