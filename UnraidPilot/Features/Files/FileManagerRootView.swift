@@ -7,23 +7,12 @@ struct FileManagerRootView: View {
 
     var body: some View {
         Group {
-            if let store, store.isConnected {
-                RemoteDirectoryView(store: store, path: "/", title: "文件")
-            } else if let store, store.isConnecting {
-                ProgressView("正在连接文件服务…")
-            } else {
-                VStack(spacing: 14) {
-                    Image(systemName: "folder.badge.questionmark")
-                        .font(.largeTitle)
-                        .foregroundStyle(AppTheme.accent)
-                    Text("文件服务未连接").font(.headline)
-                    Text("请在 Unraid 安装 AW Companion。App 会复用当前服务器地址和 API Key，不需要再次登录。")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                    Button("重新检测") { Task { await connect() } }
+            if let store {
+                FileConnectionContent(store: store) {
+                    Task { await connect() }
                 }
-                .padding(28)
+            } else {
+                ProgressView("正在准备文件服务…")
             }
         }
         .background(AppTheme.background)
@@ -37,11 +26,42 @@ struct FileManagerRootView: View {
 
     private func connect() async {
         do {
-            let activeStore = store ?? (try session.makeRemoteFileStore())
+            let activeStore: RemoteFileStore
+            if let store {
+                activeStore = store
+            } else {
+                activeStore = try session.makeRemoteFileStore()
+            }
             store = activeStore
             await activeStore.connect()
         } catch {
             setupError = error.localizedDescription
+        }
+    }
+}
+
+private struct FileConnectionContent: View {
+    @ObservedObject var store: RemoteFileStore
+    let retry: () -> Void
+
+    var body: some View {
+        if store.isConnected {
+            RemoteDirectoryView(store: store, path: "/", title: "文件")
+        } else if store.isConnecting {
+            ProgressView("正在连接文件服务…")
+        } else {
+            VStack(spacing: 14) {
+                Image(systemName: "folder.badge.questionmark")
+                    .font(.largeTitle)
+                    .foregroundStyle(AppTheme.accent)
+                Text("文件服务未连接").font(.headline)
+                Text(store.errorMessage ?? "请在 Unraid 安装 AW Companion。App 会复用当前服务器地址和 API Key，不需要再次登录。")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                Button("重新检测", action: retry)
+            }
+            .padding(28)
         }
     }
 }
