@@ -44,4 +44,14 @@ cp -R "$app_path" "$payload_path/"
 cd "$build_root"
 zip -qry "$ipa_path" Payload
 
+if ! unzip -Z1 "$ipa_path" | grep -q '^Payload/UnraidPilot.app/Frameworks/AMSMB2.framework/AMSMB2$'; then
+  echo "Packaged IPA is missing the AMSMB2 framework binary" >&2
+  exit 1
+fi
+
+if ! otool -L "$app_path/UnraidPilot" | grep -q '@rpath/AMSMB2.framework/AMSMB2'; then
+  echo "App binary is not linked to the embedded AMSMB2 framework" >&2
+  exit 1
+fi
+
 echo "Unsigned IPA: $ipa_path"
