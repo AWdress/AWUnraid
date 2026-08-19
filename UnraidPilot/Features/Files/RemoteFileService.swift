@@ -104,7 +104,8 @@ final class RemoteFileStore: ObservableObject {
         catch { isConnected = false; errorMessage = error.localizedDescription }
     }
     func list(path: String) async throws -> [RemoteFileItem] {
-        try await service.list(path: path).sorted {
+        let items = try await service.list(path: path)
+        return items.sorted {
             if $0.isDirectory != $1.isDirectory { return $0.isDirectory }
             return $0.name.localizedStandardCompare($1.name) == .orderedAscending
         }
