@@ -14,6 +14,18 @@ final class AppSession: ObservableObject {
     private var configuration: ServerConfiguration?
 
     var serverHost: String { configuration?.baseURL.host ?? "" }
+    var currentConfiguration: ServerConfiguration? { configuration }
+    var hasStoredAPIKey: Bool {
+        guard let configuration else { return false }
+        return KeychainStore.load(account: configuration.id.uuidString) != nil
+    }
+
+    func makeRemoteFileStore() throws -> RemoteFileStore {
+        guard let configuration, let apiKey = KeychainStore.load(account: configuration.id.uuidString) else {
+            throw URLError(.userAuthenticationRequired)
+        }
+        return RemoteFileStore(configuration: configuration, apiKey: apiKey)
+    }
 
     init() {
         guard let data = UserDefaults.standard.data(forKey: configurationKey),
@@ -24,10 +36,16 @@ final class AppSession: ObservableObject {
         isConfigured = true
     }
 
-    func configure(_ configuration: ServerConfiguration, apiKey: String) async throws {
-        let proposedClient = GraphQLUnraidClient(configuration: configuration, apiKey: apiKey)
+    func configure(_ configuration: ServerConfiguration, apiKey: String?) async throws {
+        let resolvedKey = apiKey?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let savedKey = self.configuration.flatMap { KeychainStore.load(account: $0.id.uuidString) }
+        let selectedKey = resolvedKey.flatMap { $0.isEmpty ? nil : $0 } ?? savedKey
+        guard let key = selectedKey else {
+            throw URLError(.userAuthenticationRequired)
+        }
+        let proposedClient = GraphQLUnraidClient(configuration: configuration, apiKey: key)
         let proposedSnapshot = try await proposedClient.fetchSnapshot()
-        try KeychainStore.save(apiKey, account: configuration.id.uuidString)
+        try KeychainStore.save(key, account: configuration.id.uuidString)
         if let data = try? JSONEncoder().encode(configuration) {
             UserDefaults.standard.set(data, forKey: configurationKey)
         }

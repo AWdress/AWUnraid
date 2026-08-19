@@ -5,14 +5,11 @@ struct OpenSourceLicensesView: View {
         List {
             Section {
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("AMSMB2")
+                    Text("第三方运行库")
                         .font(.headline)
-                    Text("版本 4.0.3 · GNU Lesser General Public License 2.1")
+                    Text("当前版本未包含第三方运行库")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
-                    Text("AW Unraid 通过动态框架使用 AMSMB2，实现原生 SMB2/3 文件访问。")
-                        .font(.subheadline)
-                    Link("查看项目与完整许可", destination: URL(string: "https://github.com/amosavian/AMSMB2")!)
                 }
                 .padding(.vertical, 6)
             }

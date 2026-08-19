@@ -6,6 +6,21 @@ on:
     branches: ["main", "codex/**"]
 
 jobs:
+  companion:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: companion/go.mod
+      - name: Verify AW Companion
+        working-directory: companion
+        run: |
+          go vet ./...
+          go test ./...
+          go build ./...
+
   build:
     runs-on: macos-15
     timeout-minutes: 30

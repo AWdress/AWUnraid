@@ -2,67 +2,46 @@ import SwiftUI
 
 struct FileManagerRootView: View {
     @EnvironmentObject private var session: AppSession
-    @StateObject private var store = SMBFileStore()
+    @State private var store: RemoteFileStore?
+    @State private var setupError: String?
 
     var body: some View {
         Group {
-            if store.isConfigured {
-                SMBDirectoryView(store: store, path: "/", title: store.configuration.share)
-                    .toolbar {
-                        ToolbarItem(placement: .topBarTrailing) {
-                            Menu {
-                                Button("断开文件共享", role: .destructive) { try? store.disconnect() }
-                            } label: { Image(systemName: "ellipsis.circle") }
-                        }
-                    }
+            if let store, store.isConnected {
+                RemoteDirectoryView(store: store, path: "/", title: "文件")
+            } else if let store, store.isConnecting {
+                ProgressView("正在连接文件服务…")
             } else {
-                SMBSetupView(store: store)
-            }
-        }
-        .navigationTitle("文件管理")
-        .navigationBarTitleDisplayMode(.inline)
-        .onAppear {
-            if store.configuration.host.isEmpty { store.configuration.host = session.serverHost }
-        }
-    }
-}
-
-private struct SMBSetupView: View {
-    @ObservedObject var store: SMBFileStore
-    @State private var connecting = false
-    @State private var error: String?
-
-    var body: some View {
-        Form {
-            Section {
-                Label("使用 Unraid 共享用户通过 SMB2/3 连接。无需 root 密码。", systemImage: "lock.shield.fill")
-                    .font(.subheadline).foregroundStyle(.secondary)
-            }
-            Section("共享服务器") {
-                TextField("主机名或 IP", text: $store.configuration.host).textInputAutocapitalization(.never).autocorrectionDisabled()
-                TextField("共享名称，例如 media", text: $store.configuration.share).textInputAutocapitalization(.never).autocorrectionDisabled()
-            }
-            Section("共享用户") {
-                TextField("用户名", text: $store.configuration.username).textInputAutocapitalization(.never).autocorrectionDisabled()
-                SecureField("密码", text: $store.password)
-            }
-            Section {
-                Button {
-                    Task {
-                        connecting = true; defer { connecting = false }
-                        do { try await store.configure(); error = nil }
-                        catch { self.error = error.localizedDescription }
-                    }
-                } label: {
-                    HStack { Spacer(); if connecting { ProgressView() }; Text(connecting ? "正在连接…" : "连接文件共享"); Spacer() }
+                VStack(spacing: 14) {
+                    Image(systemName: "folder.badge.questionmark")
+                        .font(.largeTitle)
+                        .foregroundStyle(AppTheme.accent)
+                    Text("文件服务未连接").font(.headline)
+                    Text("请在 Unraid 安装 AW Companion。App 会复用当前服务器地址和 API Key，不需要再次登录。")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                    Button("重新检测") { Task { await connect() } }
                 }
-                .disabled(connecting)
+                .padding(28)
             }
         }
-        .scrollContentBackground(.hidden)
         .background(AppTheme.background)
-        .alert("无法连接文件共享", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
-            Button("好") { error = nil }
-        } message: { Text(error ?? "") }
+        .navigationTitle("文件")
+        .navigationBarTitleDisplayMode(.inline)
+        .task { await connect() }
+        .alert("无法启动文件管理", isPresented: Binding(get: { setupError != nil }, set: { if !$0 { setupError = nil } })) {
+            Button("好") { setupError = nil }
+        } message: { Text(setupError ?? "") }
+    }
+
+    private func connect() async {
+        do {
+            let activeStore = store ?? (try session.makeRemoteFileStore())
+            store = activeStore
+            await activeStore.connect()
+        } catch {
+            setupError = error.localizedDescription
+        }
     }
 }

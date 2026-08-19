@@ -1,0 +1,12 @@
+services:
+  aw-companion:
+    build: .
+    container_name: aw-companion
+    network_mode: host
+    restart: unless-stopped
+    environment:
+      AW_LISTEN: ":8089"
+      AW_ROOT: "/data"
+      UNRAID_GRAPHQL_URL: "http://127.0.0.1/graphql"
+    volumes:
+      - /mnt/user:/data

@@ -2,24 +2,24 @@ import QuickLook
 import SwiftUI
 import UniformTypeIdentifiers
 
-struct SMBDirectoryView: View {
-    @ObservedObject var store: SMBFileStore
+struct RemoteDirectoryView: View {
+    @ObservedObject var store: RemoteFileStore
     let path: String
     let title: String
 
-    @State private var items: [SMBFileItem] = []
+    @State private var items: [RemoteFileItem] = []
     @State private var isLoading = true
     @State private var searchText = ""
     @State private var createsFolder = false
     @State private var folderName = ""
     @State private var importsFile = false
-    @State private var renamingItem: SMBFileItem?
+    @State private var renamingItem: RemoteFileItem?
     @State private var newName = ""
-    @State private var deletingItem: SMBFileItem?
+    @State private var deletingItem: RemoteFileItem?
     @State private var preview: LocalPreview?
     @State private var error: String?
 
-    private var visibleItems: [SMBFileItem] {
+    private var visibleItems: [RemoteFileItem] {
         searchText.isEmpty ? items : items.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
     }
 
@@ -38,7 +38,7 @@ struct SMBDirectoryView: View {
                 List(visibleItems) { item in
                     if item.isDirectory {
                         NavigationLink {
-                            SMBDirectoryView(store: store, path: item.path, title: item.name)
+                            RemoteDirectoryView(store: store, path: item.path, title: item.name)
                         } label: { FileRow(item: item) }
                         .contextMenu { itemMenu(item) }
                     } else {
@@ -94,7 +94,7 @@ struct SMBDirectoryView: View {
     }
 
     @ViewBuilder
-    private func itemMenu(_ item: SMBFileItem) -> some View {
+    private func itemMenu(_ item: RemoteFileItem) -> some View {
         if !item.isDirectory { Button("下载并预览", systemImage: "arrow.down.circle") { Task { await open(item) } } }
         Button("重命名", systemImage: "pencil") { newName = item.name; renamingItem = item }
         Button("创建副本", systemImage: "doc.on.doc") { Task { await duplicate(item) } }
@@ -127,7 +127,7 @@ struct SMBDirectoryView: View {
         do { try await store.remove(item); await load() }
         catch { self.error = error.localizedDescription }
     }
-    private func duplicate(_ item: SMBFileItem) async {
+    private func duplicate(_ item: RemoteFileItem) async {
         do { try await store.duplicate(item, in: path); await load() }
         catch { self.error = error.localizedDescription }
     }
@@ -137,14 +137,14 @@ struct SMBDirectoryView: View {
         do { try await store.upload(url, in: path); await load() }
         catch { self.error = error.localizedDescription }
     }
-    private func open(_ item: SMBFileItem) async {
+    private func open(_ item: RemoteFileItem) async {
         do { preview = LocalPreview(url: try await store.download(item)) }
         catch { self.error = error.localizedDescription }
     }
 }
 
 private struct FileRow: View {
-    let item: SMBFileItem
+    let item: RemoteFileItem
     var body: some View {
         HStack(spacing: 13) {
             Image(systemName: item.isDirectory ? "folder.fill" : fileIcon(item.name))

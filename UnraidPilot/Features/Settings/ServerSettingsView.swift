@@ -8,13 +8,14 @@ struct ServerSettingsView: View {
     var isOnboarding = false
 
     @State private var name = "Tower"
-    @State private var address = "http://192.168.50.113"
+    @State private var address = ""
     @State private var graphQLPath = "/graphql"
     @State private var apiKey = ""
     @State private var allowSelfSigned = false
     @State private var showsAdvanced = false
     @State private var isConnecting = false
     @State private var message: String?
+    @State private var hasLoadedConfiguration = false
 
     private enum Field { case name, address, apiKey, graphQLPath }
 
@@ -42,6 +43,7 @@ struct ServerSettingsView: View {
                 Button("完成") { focusedField = nil }
             }
         }
+        .task { loadCurrentConfiguration() }
     }
 
     private var welcomeHeader: some View {
@@ -58,7 +60,7 @@ struct ServerSettingsView: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("连接你的 Unraid")
                     .font(.largeTitle.bold())
-                Text("服务器状态和管理操作将通过 GraphQL API 安全传输。")
+                Text("支持局域网地址或 HTTPS 远程反代，粘贴完整 GraphQL 链接即可。")
                     .font(.body)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -72,7 +74,7 @@ struct ServerSettingsView: View {
             ConnectionField(title: "名称", placeholder: "例如 Tower", icon: "server.rack", text: $name)
                 .focused($focusedField, equals: .name)
             Divider().overlay(AppTheme.divider).padding(.leading, 44)
-            ConnectionField(title: "服务器地址", placeholder: "https://nas.example.com", icon: "network", text: $address, keyboardType: .URL)
+            ConnectionField(title: "Unraid API 地址", placeholder: "https://nas.example.com/graphql", icon: "network", text: $address, keyboardType: .URL)
                 .focused($focusedField, equals: .address)
         }
     }
@@ -84,7 +86,7 @@ struct ServerSettingsView: View {
                 Image(systemName: "key.fill")
                     .frame(width: 30)
                     .foregroundStyle(AppTheme.accent)
-                SecureField("粘贴 API Key", text: $apiKey)
+                SecureField(session.hasStoredAPIKey ? "留空则继续使用已保存的 API Key" : "粘贴 API Key", text: $apiKey)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                     .focused($focusedField, equals: .apiKey)
@@ -144,7 +146,7 @@ struct ServerSettingsView: View {
             .buttonStyle(.borderedProminent)
             .buttonBorderShape(.roundedRectangle)
             .tint(AppTheme.accent)
-            .disabled(isConnecting || apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            .disabled(isConnecting || (!session.hasStoredAPIKey && apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty))
 
             if let message {
                 Label(message, systemImage: "exclamationmark.triangle.fill")
@@ -165,14 +167,27 @@ struct ServerSettingsView: View {
     }
 
     private func save() async {
-        let cleanAddress = address.trimmingCharacters(in: .whitespacesAndNewlines)
+        var cleanAddress = address.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !cleanAddress.contains("://") { cleanAddress = "https://\(cleanAddress)" }
         let cleanKey = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let url = URL(string: cleanAddress), url.scheme == "http" || url.scheme == "https" else {
+        guard let enteredURL = URL(string: cleanAddress), enteredURL.scheme == "http" || enteredURL.scheme == "https" else {
             message = "服务器地址需要以 http:// 或 https:// 开头。"
             return
         }
-        guard !cleanKey.isEmpty else {
+        guard !cleanKey.isEmpty || session.hasStoredAPIKey else {
             message = "请输入 Unraid API Key。"
+            return
+        }
+
+        let endpointPath = enteredURL.path.isEmpty || enteredURL.path == "/"
+            ? normalizedPath(graphQLPath)
+            : normalizedPath(enteredURL.path)
+        var origin = URLComponents(url: enteredURL, resolvingAgainstBaseURL: false)
+        origin?.path = ""
+        origin?.query = nil
+        origin?.fragment = nil
+        guard let baseURL = origin?.url else {
+            message = "无法识别该服务器地址。"
             return
         }
 
@@ -182,17 +197,33 @@ struct ServerSettingsView: View {
         do {
             try await session.configure(
                 .init(
+                    id: session.currentConfiguration?.id ?? UUID(),
                     name: name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Tower" : name,
-                    baseURL: url,
-                    graphQLPath: graphQLPath,
+                    baseURL: baseURL,
+                    graphQLPath: endpointPath,
                     allowSelfSignedCertificate: allowSelfSigned
                 ),
-                apiKey: cleanKey
+                apiKey: cleanKey.isEmpty ? nil : cleanKey
             )
             if !isOnboarding { dismiss() }
         } catch {
             message = friendlyMessage(for: error)
         }
+    }
+
+    private func normalizedPath(_ value: String) -> String {
+        let clean = value.trimmingCharacters(in: CharacterSet(charactersIn: " /"))
+        return clean.isEmpty ? "/graphql" : "/\(clean)"
+    }
+
+    private func loadCurrentConfiguration() {
+        guard !hasLoadedConfiguration else { return }
+        hasLoadedConfiguration = true
+        guard let configuration = session.currentConfiguration else { return }
+        name = configuration.name
+        address = configuration.baseURL.absoluteString
+        graphQLPath = configuration.graphQLPath
+        allowSelfSigned = configuration.allowSelfSignedCertificate
     }
 
     private func friendlyMessage(for error: Error) -> String {

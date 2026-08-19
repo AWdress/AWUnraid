@@ -379,7 +379,7 @@ private extension Dictionary where Key == String, Value == Any {
     }
 }
 
-private final class ServerTrustDelegate: NSObject, URLSessionDelegate {
+final class ServerTrustDelegate: NSObject, URLSessionDelegate {
     let allowSelfSigned: Bool
     init(allowSelfSigned: Bool) { self.allowSelfSigned = allowSelfSigned }
 

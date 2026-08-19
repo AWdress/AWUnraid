@@ -29,29 +29,10 @@ xcodebuild \
   archive
 
 app_path="$archive_path/Products/Applications/UnraidPilot.app"
-build_products="$derived_data_path/Build/Intermediates.noindex/ArchiveIntermediates/UnraidPilot/BuildProductsPath/Release-iphoneos"
-mkdir -p "$app_path/Frameworks"
-find "$build_products" -maxdepth 2 -name '*.framework' -exec cp -RL {} "$app_path/Frameworks/" \;
-
-if [[ ! -d "$app_path/Frameworks/AMSMB2.framework" ]]; then
-  echo "AMSMB2.framework was not embedded in the app bundle" >&2
-  exit 1
-fi
-
 rm -rf "$payload_path" "$ipa_path"
 mkdir -p "$payload_path"
 cp -R "$app_path" "$payload_path/"
 cd "$build_root"
 zip -qry "$ipa_path" Payload
-
-if ! unzip -Z1 "$ipa_path" | grep -q '^Payload/UnraidPilot.app/Frameworks/AMSMB2.framework/AMSMB2$'; then
-  echo "Packaged IPA is missing the AMSMB2 framework binary" >&2
-  exit 1
-fi
-
-if ! otool -L "$app_path/UnraidPilot" | grep -q '@rpath/AMSMB2.framework/AMSMB2'; then
-  echo "App binary is not linked to the embedded AMSMB2 framework" >&2
-  exit 1
-fi
 
 echo "Unsigned IPA: $ipa_path"

@@ -11,12 +11,12 @@
 - 已根据实际 Unraid 7.1.2 Schema 完成 Dashboard、阵列、磁盘、Docker 与 VM 解码。
 - 已确认测试插件为 Unraid Connect `2026.06.18.1729` 并完成 Schema 采集；Developer Sandbox 联调后可以关闭。
 - 已实现 Docker 启停、暂停、更新、自动启动、等待时间、删除、日志、端口/挂载/镜像信息，以及阵列、Parity 与 VM 的核心控制 Mutation。
-- 已实现原生 SMB2/3 文件管理：目录浏览、搜索、新建文件夹、上传、下载预览、重命名、复制和递归删除；共享密码只保存在设备 Keychain。
+- 已实现原生 HTTPS 文件管理：目录浏览、搜索、新建文件夹、上传、下载预览、重命名、复制和递归删除；通过 AW Companion 复用 App 的 Unraid API Key，无需第二次登录。
 - 已加入 GitHub Actions macOS 未签名 IPA 构建工作流。
 
 ## 文件管理
 
-文件管理不嵌套 Unraid 网页，直接使用 SMB2/3。请先在 Unraid 的“共享”中确认目标共享已导出，然后在 App 中填写服务器地址、共享名称和共享用户。公开共享可先尝试 `guest` 与空密码；安全共享应使用专用的普通共享用户，不要填写 root 密码。
+文件管理不嵌套网页，也不向公网开放 SMB。请先在 Unraid 部署 [`companion`](companion/README.md)。局域网下 App 会自动检测 `http://服务器:8089`；远程访问时，在现有 HTTPS 反代中把 `/aw-files` 转发到 Companion。身份验证复用主连接的 `x-api-key`，App 打开“文件”后会自动读取 `/mnt/user`。
 
 ## 在 macOS 生成工程
 
@@ -34,7 +34,7 @@ chmod +x scripts/build-unsigned-ipa.sh
 ./scripts/build-unsigned-ipa.sh
 ```
 
-输出为 `build/UnraidPilot-unsigned.ipa`，之后可使用你自己的签名工具、证书和描述文件重签。App 当前不申请推送、iCloud、App Groups 等特殊 entitlement，降低重签失败概率。IPA 包含用于 SMB 的动态 `AMSMB2.framework`，重签工具必须同时签名 App 内的 `Frameworks` 目录；常见完整 IPA 重签工具会自动处理。
+输出为 `build/UnraidPilot-unsigned.ipa`，之后可使用你自己的签名工具、证书和描述文件重签。App 当前不申请推送、iCloud、App Groups 等特殊 entitlement，降低重签失败概率。
 
 第三方组件许可见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
 
