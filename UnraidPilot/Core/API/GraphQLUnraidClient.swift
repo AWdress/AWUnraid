@@ -255,9 +255,13 @@ final class GraphQLUnraidClient: UnraidServing {
     }
 
     func fetchContainerLogs(id: String, tail: Int) async throws -> [String] {
-        let query = "query ContainerLogs($id: PrefixedID!, $tail: Int) { docker { logs(id: $id, tail: $tail) { lines cursor } } }"
+        let query = "query ContainerLogs($id: PrefixedID!, $tail: Int) { docker { logs(id: $id, tail: $tail) { lines { timestamp message } cursor } } }"
         let root = try await execute(query: query, variables: ["id": id, "tail": tail])
-        return root.object("data")?.object("docker")?.object("logs")?.strings("lines") ?? []
+        return (root.object("data")?.object("docker")?.object("logs")?.objects("lines") ?? []).map { line in
+            let timestamp = line.string("timestamp") ?? ""
+            let message = line.string("message") ?? ""
+            return timestamp.isEmpty ? message : "[\(timestamp)] \(message)"
+        }
     }
 
     func fetchNotifications() async throws -> [AppNotification] {
