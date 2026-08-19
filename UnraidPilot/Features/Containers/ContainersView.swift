@@ -42,10 +42,11 @@ struct ContainersView: View {
                 ForEach(regular) { row(for: $0) }
             }
         }
-        .listStyle(.insetGrouped)
+        .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .background(AppTheme.background)
         .navigationTitle("Docker")
+        .navigationBarTitleDisplayMode(.inline)
         .searchable(text: $searchText, prompt: "搜索容器或镜像")
         .refreshable { await session.refresh() }
         .toolbar {
@@ -111,7 +112,7 @@ struct ContainersView: View {
         HStack(spacing: 12) {
             NavigationLink { ContainerDetailView(containerID: container.id) } label: {
                 HStack(spacing: 12) {
-                    ContainerIconView(container: container)
+                    ContainerIconView(container: container, size: 38)
                     VStack(alignment: .leading, spacing: 4) {
                         Text(container.name).font(.headline).lineLimit(1)
                         if container.updateAvailable {
@@ -131,7 +132,7 @@ struct ContainersView: View {
             } label: {
                 Image(systemName: container.state == .running ? "stop.fill" : "play.fill")
                     .font(.caption.weight(.bold))
-                    .frame(width: 36, height: 36)
+                    .frame(width: 44, height: 44)
                     .background(AppTheme.accent.opacity(0.13), in: Circle())
             }
             .buttonStyle(.borderless)

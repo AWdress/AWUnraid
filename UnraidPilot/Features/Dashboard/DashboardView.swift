@@ -44,23 +44,20 @@ private struct HealthPanel: View {
     let snapshot: ServerSnapshot
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack { Text("系统健康").font(.headline); Image(systemName: "info.circle").foregroundStyle(AppTheme.secondaryText); Spacer() }
-            HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(alignment: .firstTextBaseline, spacing: 2) {
-                        Text("\(snapshot.healthScore)").font(.largeTitle.weight(.semibold).monospacedDigit())
-                        Text("/100").foregroundStyle(AppTheme.secondaryText)
-                    }
-                    Text("良好").foregroundStyle(AppTheme.accent).font(.headline)
-                    Text(snapshot.uptime).font(.subheadline)
-                    Text("运行时间").font(.caption).foregroundStyle(AppTheme.secondaryText)
-                }.frame(width: 92, alignment: .leading)
-                Divider().overlay(AppTheme.divider)
-                HStack(spacing: 10) {
-                    MetricColumn(title: "CPU", value: "\(Int(snapshot.cpuUsage * 100))%", points: [2,5,3,7,4,6,10,4])
-                    MetricColumn(title: "内存", value: "\(Int(snapshot.memoryUsage * 100))%", points: [3,6,5,9,7,8,6,9])
-                    MetricColumn(title: "网络", value: snapshot.networkRate, points: [2,3,7,4,9,5,7,6])
-                }
+            HStack(spacing: 8) {
+                Text("系统健康").font(.headline)
+                Label("良好 · \(snapshot.healthScore)", systemImage: "checkmark.circle.fill")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(AppTheme.healthy)
+                Spacer()
+                Text(snapshot.uptime).font(.caption).foregroundStyle(AppTheme.secondaryText)
+            }
+            HStack(spacing: 0) {
+                MetricColumn(title: "CPU", value: "\(Int(snapshot.cpuUsage * 100))%", points: [2,5,3,7,4,6,10,4])
+                Divider().overlay(AppTheme.divider).padding(.horizontal, 10)
+                MetricColumn(title: "内存", value: "\(Int(snapshot.memoryUsage * 100))%", points: [3,6,5,9,7,8,6,9])
+                Divider().overlay(AppTheme.divider).padding(.horizontal, 10)
+                MetricColumn(title: "网络", value: snapshot.networkRate, points: [2,3,7,4,9,5,7,6])
             }
         }.padding(14).appSurface()
     }
@@ -72,7 +69,7 @@ private struct MetricColumn: View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title).font(.caption).foregroundStyle(AppTheme.secondaryText)
             Text(value).font(.subheadline.weight(.semibold).monospacedDigit()).lineLimit(1).minimumScaleFactor(0.65)
-            Sparkline(points: points).stroke(AppTheme.accent, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round)).frame(height: 28)
+            Sparkline(points: points).stroke(AppTheme.accent, style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round)).frame(height: 22)
         }.frame(maxWidth: .infinity, alignment: .leading)
     }
 }

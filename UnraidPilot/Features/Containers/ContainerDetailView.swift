@@ -13,7 +13,9 @@ struct ContainerDetailView: View {
         Group {
             if let container {
                 List {
-                    Section { header(container).listRowBackground(Color.clear) }
+                    header(container)
+                        .listRowBackground(Color.clear)
+                        .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 8, trailing: 16))
                     Section("操作") { actions(container) }
                     Section("管理") {
                         NavigationLink { ContainerLogsView(container: container) } label: {
@@ -90,34 +92,31 @@ struct ContainerDetailView: View {
     }
 
     private func header(_ container: ContainerSnapshot) -> some View {
-        HStack(spacing: 16) {
-            ContainerIconView(container: container, size: 64)
+        HStack(spacing: 12) {
+            ContainerIconView(container: container, size: 52)
             VStack(alignment: .leading, spacing: 5) {
-                Text(container.name).font(.title2.bold())
+                Text(container.name).font(.headline)
                 Text(container.image).font(.caption).foregroundStyle(.secondary).lineLimit(2)
                 Label(stateText(container.state), systemImage: "circle.fill")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(container.state == .running ? AppTheme.healthy : .secondary)
             }
         }
-        .padding(.vertical, 10)
+        .padding(.vertical, 4)
     }
 
     private func actions(_ container: ContainerSnapshot) -> some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 10) {
-                ActionButton(title: container.state == .running ? "停止" : "启动", icon: container.state == .running ? "stop.fill" : "play.fill", tint: container.state == .running ? .red : AppTheme.healthy) {
-                    pendingAction = container.state == .running ? .stop : .start
-                }
-                ActionButton(title: "重启", icon: "arrow.clockwise", tint: AppTheme.accent) { pendingAction = .restart }
-                ActionButton(title: container.state == .paused ? "恢复" : "暂停", icon: container.state == .paused ? "playpause.fill" : "pause.fill", tint: AppTheme.accent) {
-                    pendingAction = container.state == .paused ? .resume : .pause
-                }
-                ActionButton(title: "更新", icon: "arrow.up.circle.fill", tint: container.updateAvailable ? AppTheme.warning : AppTheme.accent) { pendingAction = .update }
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 8) {
+            ActionButton(title: container.state == .running ? "停止" : "启动", icon: container.state == .running ? "stop.fill" : "play.fill", tint: container.state == .running ? .red : AppTheme.healthy) {
+                pendingAction = container.state == .running ? .stop : .start
             }
-            .padding(.vertical, 2)
+            ActionButton(title: "重启", icon: "arrow.clockwise", tint: AppTheme.accent) { pendingAction = .restart }
+            ActionButton(title: container.state == .paused ? "恢复" : "暂停", icon: container.state == .paused ? "playpause.fill" : "pause.fill", tint: AppTheme.accent) {
+                pendingAction = container.state == .paused ? .resume : .pause
+            }
+            ActionButton(title: "更新", icon: "arrow.up.circle.fill", tint: container.updateAvailable ? AppTheme.warning : AppTheme.accent) { pendingAction = .update }
         }
-        .listRowInsets(EdgeInsets(top: 10, leading: 16, bottom: 10, trailing: 0))
+        .padding(.vertical, 2)
     }
 
     private func stateText(_ state: ContainerSnapshot.State) -> String {
@@ -140,14 +139,15 @@ private struct ActionButton: View {
     let action: () -> Void
     var body: some View {
         Button(action: action) {
-            Label(title, systemImage: icon)
-                .font(.subheadline.weight(.semibold))
-                .padding(.horizontal, 14)
-                .frame(minHeight: 42)
+            VStack(spacing: 5) {
+                Image(systemName: icon).font(.body.weight(.semibold))
+                Text(title).font(.caption.weight(.semibold)).lineLimit(1)
+            }
+            .frame(maxWidth: .infinity, minHeight: 52)
         }
         .buttonStyle(.bordered)
         .tint(tint)
-        .buttonBorderShape(.capsule)
+        .buttonBorderShape(.roundedRectangle(radius: 12))
     }
 }
 

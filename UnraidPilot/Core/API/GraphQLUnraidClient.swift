@@ -303,11 +303,20 @@ final class GraphQLUnraidClient: UnraidServing {
     }
 
     private static func formatUptime(_ raw: String?) -> String {
-        guard let raw, let seconds = Double(raw) else { return raw ?? "—" }
+        guard let raw else { return "—" }
+        let seconds: TimeInterval
+        if let numeric = Double(raw) {
+            seconds = numeric
+        } else if let bootDate = ISO8601DateFormatter().date(from: raw) {
+            seconds = max(Date().timeIntervalSince(bootDate), 0)
+        } else {
+            return "—"
+        }
         let days = Int(seconds) / 86_400
         let hours = (Int(seconds) % 86_400) / 3_600
+        if days > 0 { return "\(days)天 \(hours)小时" }
         let minutes = (Int(seconds) % 3_600) / 60
-        return "\(days)天 \(String(format: "%02d:%02d", hours, minutes))"
+        return "\(hours)小时 \(minutes)分钟"
     }
 
     func execute(query: String, variables: [String: Any] = [:]) async throws -> [String: Any] {
