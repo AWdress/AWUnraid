@@ -31,7 +31,12 @@ jobs:
       - name: Build unsigned IPA
         run: |
           chmod +x scripts/build-unsigned-ipa.sh
-          ./scripts/build-unsigned-ipa.sh
+          if ! ./scripts/build-unsigned-ipa.sh 2>&1 | tee xcodebuild.log; then
+            grep -E 'error:|fatal error:' xcodebuild.log | tail -30 | while IFS= read -r line; do
+              echo "::error::$line"
+            done
+            exit 1
+          fi
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
